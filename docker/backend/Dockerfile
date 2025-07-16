@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 8080
+EXPOSE 5000
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS development
 WORKDIR /app
@@ -13,7 +13,7 @@ RUN dotnet restore
 COPY . .
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:5000
 ENV ASPNETCORE_ENVIRONMENT=Development
 
 # For development with hot reload
@@ -38,6 +38,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:5000
 
 ENTRYPOINT ["dotnet", "ScanNotesManager.Backend.dll"] 
