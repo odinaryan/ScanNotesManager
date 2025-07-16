@@ -11,8 +11,9 @@ fi
 
 # Start services
 echo "🔧 Building and starting services..."
-docker-compose up --build
+docker compose up --build
 
 echo "✅ Development environment started!"
 echo "Frontend: http://localhost"
-echo "Backend API: http://localhost/api" 
+echo "Backend API: http://localhost/api"
+echo "Direct Backend: http://localhost:8080" 

@@ -1,19 +1,19 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
-EXPOSE 5000
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS development
 WORKDIR /app
 
 # Copy csproj and restore dependencies
-COPY *.csproj ./
+COPY modules/backend/*.csproj ./
 RUN dotnet restore
 
 # Copy everything else
-COPY . .
+COPY modules/backend .
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Development
 
 # For development with hot reload
@@ -23,11 +23,11 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
-COPY *.csproj ./
+COPY modules/backend/*.csproj ./
 RUN dotnet restore
 
 # Copy everything else and build
-COPY . .
+COPY modules/backend .
 RUN dotnet build -c Release -o /app/build
 
 FROM build AS publish
@@ -38,6 +38,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:8080
 
 ENTRYPOINT ["dotnet", "ScanNotesManager.Backend.dll"] 

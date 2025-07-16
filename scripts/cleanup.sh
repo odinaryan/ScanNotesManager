@@ -5,18 +5,18 @@ echo "========================================================="
 
 # Stop and remove containers
 echo "🛑 Stopping services..."
-docker-compose down
+docker compose down
 
 # Remove volumes
 echo "🗑️  Removing volumes..."
-docker-compose down -v
+docker compose down -v
 
 # Remove images (optional)
 read -p "Do you want to remove Docker images? (y/n): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "🗑️  Removing Docker images..."
-    docker-compose down --rmi all
+    docker compose down --rmi all
 fi
 
 # Clean up dangling images and containers

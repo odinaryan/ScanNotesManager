@@ -4,6 +4,9 @@ using ScanNotesManager.Backend.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure URLs to use port 8080
+builder.WebHost.UseUrls("http://+:8080");
+
 // Add services to the container
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
