@@ -1,15 +1,15 @@
 using ScanNotesManager.Backend.Services;
 using ScanNotesManager.Backend.DTOs;
 using ScanNotesManager.Backend.Models;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure URLs to use port 8080
 builder.WebHost.UseUrls("http://+:8080");
 
-// Add services to the container
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Validation is handled by the built-in DataAnnotations
 
 // Register our service as a singleton (in-memory storage)
 builder.Services.AddSingleton<IScanService, ScanService>();
@@ -28,13 +28,51 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseCors();
+
+// Global error handling middleware
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        // Log the error (in production, use proper logging)
+        Console.WriteLine($"Unhandled exception: {ex}");
+        
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        
+        var errorResponse = new
+        {
+            message = "An internal server error occurred",
+            statusCode = 500,
+            detail = app.Environment.IsDevelopment() ? ex.Message : null
+        };
+        
+        var json = JsonSerializer.Serialize(errorResponse);
+        await context.Response.WriteAsync(json);
+    }
+});
+
+// Helper method for validation
+static bool TryValidateModel<T>(T model, out List<string> errors)
+{
+    errors = new List<string>();
+    var context = new ValidationContext(model!);
+    var results = new List<ValidationResult>();
+    
+    bool isValid = Validator.TryValidateObject(model!, context, results, true);
+    
+    if (!isValid)
+    {
+        errors.AddRange(results.Select(r => r.ErrorMessage ?? "Validation error"));
+    }
+    
+    return isValid;
+}
 
 // API Endpoints
 
@@ -52,8 +90,7 @@ app.MapGet("/api/scans", async (IScanService scanService) =>
     
     return Results.Ok(scanDtos);
 })
-.WithName("GetScans")
-.WithOpenApi();
+.WithName("GetScans");
 
 // GET /api/scans/{id}/notes - Get notes for a specific scan
 app.MapGet("/api/scans/{id}/notes", async (int id, IScanService scanService) =>
@@ -61,7 +98,10 @@ app.MapGet("/api/scans/{id}/notes", async (int id, IScanService scanService) =>
     var scan = await scanService.GetScanByIdAsync(id);
     if (scan == null)
     {
-        return Results.NotFound($"Scan with ID {id} not found");
+        return Results.NotFound(new { 
+            message = $"Scan with ID {id} not found",
+            statusCode = 404 
+        });
     }
 
     var notes = await scanService.GetNotesByScanIdAsync(id);
@@ -76,17 +116,29 @@ app.MapGet("/api/scans/{id}/notes", async (int id, IScanService scanService) =>
     
     return Results.Ok(noteDtos);
 })
-.WithName("GetNotesByScan")
-.WithOpenApi();
+.WithName("GetNotesByScan");
 
 // POST /api/scans/{id}/notes - Add a note to a scan
 app.MapPost("/api/scans/{id}/notes", async (int id, CreateNoteDto createNoteDto, IScanService scanService) =>
 {
+    // Validate the model
+    if (!TryValidateModel(createNoteDto, out var validationErrors))
+    {
+        return Results.BadRequest(new { 
+            message = "Validation failed",
+            errors = validationErrors,
+            statusCode = 400
+        });
+    }
+
     // Check if scan exists
     var scan = await scanService.GetScanByIdAsync(id);
     if (scan == null)
     {
-        return Results.NotFound($"Scan with ID {id} not found");
+        return Results.NotFound(new { 
+            message = $"Scan with ID {id} not found",
+            statusCode = 404 
+        });
     }
 
     // Add the note
@@ -103,12 +155,10 @@ app.MapPost("/api/scans/{id}/notes", async (int id, CreateNoteDto createNoteDto,
     
     return Results.Created($"/api/scans/{id}/notes/{note.Id}", noteDto);
 })
-.WithName("AddNoteToScan")
-.WithOpenApi();
+.WithName("AddNoteToScan");
 
 // Health check endpoint
 app.MapGet("/api/health", () => Results.Ok(new { Status = "Healthy", Timestamp = DateTime.UtcNow }))
-.WithName("HealthCheck")
-.WithOpenApi();
+.WithName("HealthCheck");
 
 app.Run(); 
