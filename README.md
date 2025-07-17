@@ -86,10 +86,10 @@ git clone <repository-url>
 cd ScanNotesManager
 
 # Build and start all services
-docker-compose up --build
+docker compose up --build
 
 # Or run in detached mode
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### 2. Access the Application
@@ -116,11 +116,11 @@ curl -X POST "http://localhost/api/scans/1/notes" \
 ### Hot Reload Development
 ```bash
 # Start with hot reload enabled
-docker-compose up --build
+docker compose up --build
 
 # View real-time logs
-docker-compose logs -f frontend
-docker-compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f backend
 ```
 
 ### Individual Service Development
@@ -212,22 +212,22 @@ curl -X POST "http://localhost/api/scans/999/notes" \
 
 ```bash
 # Build and start all services
-docker-compose up --build
+docker compose up --build
 
 # Stop and remove containers
-docker-compose down
+docker compose down
 
 # View logs for specific service
-docker-compose logs -f [frontend|backend|nginx]
+docker compose logs -f [frontend|backend|nginx]
 
 # Rebuild specific service
-docker-compose build [service-name]
+docker compose build [service-name]
 
 # Access container shell
-docker-compose exec [service-name] sh
+docker compose exec [service-name] sh
 
 # Check container status
-docker-compose ps
+docker compose ps
 ```
 
 ## 🔧 Configuration
