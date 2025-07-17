@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import type { NoteFormProps } from '../types';
+import { useAddNote } from '../hooks';
+import { useSelectedScanId } from '../stores/app-store';
 
-const NoteForm = ({ onSubmit, isLoading }: NoteFormProps) => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+interface FormErrors {
+  title?: string;
+  content?: string;
+}
+
+const NoteForm = () => {
+  const selectedScanId = useSelectedScanId();
+  const addNoteMutation = useAddNote();
+  const [title, setTitle] = useState<string>('');
+  const [content, setContent] = useState<string>('');
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
-    const newErrors: { title?: string; content?: string } = {};
+    const newErrors: FormErrors = {};
 
     if (!title.trim()) {
       newErrors.title = 'Title is required';
@@ -25,27 +33,45 @@ const NoteForm = ({ onSubmit, isLoading }: NoteFormProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || !selectedScanId) {
       return;
     }
 
-    onSubmit({
-      title: title.trim(),
-      content: content.trim(),
-    });
+    try {
+      await addNoteMutation.mutateAsync({
+        scanId: selectedScanId,
+        note: {
+          title: title.trim(),
+          content: content.trim(),
+        },
+      });
 
-    // Reset form after submission
+      // Reset form after successful submission
+      setTitle('');
+      setContent('');
+      setErrors({});
+    } catch (error) {
+      // Error is handled by TanStack Query and displayed in the ErrorBanner
+      console.error('Failed to add note:', error);
+    }
+  };
+
+  const handleClear = (): void => {
     setTitle('');
     setContent('');
     setErrors({});
   };
 
+  if (!selectedScanId) {
+    return null; // Don't render form if no scan is selected
+  }
+
   return (
     <div className="card p-6">
-      <h3 className="text-lg font-semibold text-secondary-900 mb-4">Add New Note</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Note</h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -59,12 +85,12 @@ const NoteForm = ({ onSubmit, isLoading }: NoteFormProps) => {
             onChange={(e) => setTitle(e.target.value)}
             className={`form-input ${errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
             placeholder="Enter note title..."
-            disabled={isLoading}
+            disabled={addNoteMutation.isPending}
           />
           {errors.title && (
             <p className="mt-1 text-sm text-red-600">{errors.title}</p>
           )}
-          <p className="mt-1 text-xs text-secondary-500">
+          <p className="mt-1 text-xs text-gray-500">
             {title.length}/100 characters
           </p>
         </div>
@@ -80,12 +106,12 @@ const NoteForm = ({ onSubmit, isLoading }: NoteFormProps) => {
             rows={4}
             className={`form-textarea ${errors.content ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
             placeholder="Enter note content..."
-            disabled={isLoading}
+            disabled={addNoteMutation.isPending}
           />
           {errors.content && (
             <p className="mt-1 text-sm text-red-600">{errors.content}</p>
           )}
-          <p className="mt-1 text-xs text-secondary-500">
+          <p className="mt-1 text-xs text-gray-500">
             {content.length}/1000 characters
           </p>
         </div>
@@ -93,22 +119,18 @@ const NoteForm = ({ onSubmit, isLoading }: NoteFormProps) => {
         <div className="flex justify-end space-x-3">
           <button
             type="button"
-            onClick={() => {
-              setTitle('');
-              setContent('');
-              setErrors({});
-            }}
+            onClick={handleClear}
             className="btn btn-secondary"
-            disabled={isLoading}
+            disabled={addNoteMutation.isPending}
           >
             Clear
           </button>
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isLoading || !title.trim() || !content.trim()}
+            disabled={addNoteMutation.isPending || !title.trim() || !content.trim()}
           >
-            {isLoading ? (
+            {addNoteMutation.isPending ? (
               <>
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
