@@ -23,7 +23,7 @@ This is a production-ready implementation of a Scan Notes Manager, designed to a
 
 ## 🚀 Tech Stack
 
-### Frontend (Modern React Architecture)
+### Frontend
 - **React 19.1.0** with TypeScript Strict Mode
 - **TanStack Query 5.83.0** for server state management
 - **Zustand 5.0.6** for client state management
@@ -31,7 +31,7 @@ This is a production-ready implementation of a Scan Notes Manager, designed to a
 - **Tailwind CSS 4.1.11** with custom design system
 - **Axios** for type-safe HTTP client
 
-### Backend (Professional ASP.NET Core)
+### Backend
 - **ASP.NET Core 8.0** with Minimal APIs
 - **Model validation** with DataAnnotations
 - **Global error handling** middleware
